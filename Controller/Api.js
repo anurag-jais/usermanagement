@@ -1,22 +1,9 @@
 const User = require('../models/user');
 const UUID = require('uuid');
-//const services = require('../Services/service');
+const services = require('../Services/service');
 
 exports.createUser = (req,res,next)=>{
-    const name = req.body.name;
-    const dob =  req.body.dob;
-    const gender = req.body.gender;
-    const address = req.body.address;
-    const profession = req.body.profession;
-    const user = new User({
-        id: UUID(),
-        name: name,
-        dob: dob,
-        gender: gender,
-        address: address,
-        profession: profession,
-    });
-    user.save()
+    services.createUserFunc(req.body)
         .then( result=>{
             console.log(result);
             console.log('Created User');
@@ -25,55 +12,47 @@ exports.createUser = (req,res,next)=>{
         .catch(err => {
             console.log(err);
             res.status(500).send(err);
-        })
+        });
 };
 exports.getUser = (req,res,next)=>{
-    //console.log("getUser is running");
-    User.find({ id: req.params.id}, function (err, docs) {
-        if(err){
-            res.status(500).send("ERROR");
-        }
-        if(docs.length>0)
-            res.send(docs);
+    services.getUserFunc(req.params.id)
+    .then(result=>{
+        if(result.length>0)
+            res.send(result);
         else
-            res.send("USER NOT EXIST");
+            res.send("USER NOT FOUND");
+    })
+    .catch(err=>{
+        res.status(500).send("err");
     });
-    // console.log("getUser is running");
-    // services.getUserFunc(req.params.id)
-    // .then(result=>{
-    //     res.send(result);
-    // })
-    // .catch(err=>{
-    //     res.status(500).send("err");
-    // });
 };
 exports.updateUser = (req,res,next)=>{
-    User.update({ id: req.params.id},{ name:req.body.name,
-                                        dob:req.body.dob,
-                                        gender:req.body.gender,
-                                        address: req.body.address,
-                                        profession: req.body.profession }, function(err,user){
-                                            if(err){ res.status(500).send("ERROR");}
-                                            console.log(user);
-                                            if(user.nModified === 0)
-                                            res.send("NOT UPDATED");
-                                            else
-                                            res.send("USER IS UPDATED");
+    services.updateFunc(req.params.id,req.body)
+    .then(user=>{
+        if(user.nModified === 0)
+            res.send("NOT UPDATED");
+        else
+            res.send("USER IS UPDATED");
+    })
+    .catch(err=>{
+        if(err){ res.status(500).send("ERROR");}
     });
 };
 
 exports.deleteUser = (req,res,next)=>{
-    User.deleteOne({ id: req.params.id},function(err,user){
-        if(err){ res.status(404).send("ID NOT FOUND"); }
+    services.deleteUserFunc(req.params.id)
+    .then(user=>{
         if(user.deletedCount === 0)
-        res.send("ID NOT FOUND");
+            res.send("ID NOT FOUND");
         else
             res.send("USER IS DELETED");
+    })
+    .catch(err=>{
+        res.send(err);
     });
 };
-
 exports.filterAge = (req,res,next)=>{
-    User.find()
+    services.filterAgeFunc()
     .then(users=>{
         console.log(users);
         function isGreaterThan(value){
@@ -95,30 +74,41 @@ exports.filterAge = (req,res,next)=>{
 };
 
 exports.filterName = (req,res,next)=>{
-    User.find({name: req.params.value},function(err,users){
-        if(err){ res.status(500).send("NAME NOT FOUND");}
+    services.filterNameFunc(req.params.value)
+    .then(user=>{
         if(user.length>0)
             res.send(users);
         else
             res.send("SUCH FILTER NOT EXIST");
+    })
+    .catch(err=>{
+        res.status(500).send("NAME NOT FOUND");
     });
 };
 exports.filterAddress = (req,res,next)=>{
-    User.find({ address: {$regex: req.params.value} },function(err,users){
-        if(err){ res.status(500).send("NAME NOT FOUND");}
+    
+    services.filterAddressFunc()
+    .then(user=>{
         if(user.length>0)
             res.send(users);
         else 
             res.send("SUCH FILTER NOT EXIST");
+    })
+    .catch(err=>{
+        res.status(500).send("ADDRESS NOT FOUND");
     });
 };
 exports.filterProfession = (req,res,next)=>{
-    User.find({profession: req.params.value},function(err,users){
-        if(err){ res.status(500).send("PROFESSION NOT FOUND");}
+    
+    services.filterProfessionFunc(req.params.value)
+    .then(user=>{
         if(user.length>0)
             res.send(users);
         else
             res.send("SUCH FILTER NOT EXIST");
+    })
+    .catch(err=>{
+        res.status(500).send("PROFESSION NOT FOUND");
     });
 };
 
@@ -141,7 +131,8 @@ exports.compoundFilter = (req,res,next)=>{
         queryBuilder.gender = req.query.gender;
     }
 
-    User.find(queryBuilder)
+    //User.find(queryBuilder)
+    services.compoundfilterFunc()
     .then(users=>{
         res.send(users);
     })
@@ -150,5 +141,3 @@ exports.compoundFilter = (req,res,next)=>{
         res.send(err);
     });
 };
-
-//module.exports = service;
